@@ -1,5 +1,6 @@
 {
     "python.analysis.extraPaths": [
-        "./ply-3.11/ply"
+        "./ply-3.11/ply",
+        "./ply-3.11"
     ]
 }
