@@ -1,118 +1,134 @@
-# Limbreria lexica y sintactica
+import sys
 import ply.lex as lex
-import ply.yacc as yacc
-import tkinter as tk
-from tkinter import filedialog
 
-# Crear la ventana principal
-ventana = tk.Tk()
-
-# Función para manejar el botón "Seleccionar archivo"
-def seleccionar_archivo():
-    # Abrir un cuadro de diálogo para seleccionar un archivo
-    archivo = filedialog.askopenfile()
-    # Obtener la ruta del archivo seleccionado
-    ruta_archivo = archivo.name
-    # Imprimir la ruta en la consola (opcional)
-    print("Archivo seleccionado:", ruta_archivo)
-
-# Crear el botón "Seleccionar archivo"
-boton_seleccionar = tk.Button(ventana, text="Seleccionar archivo", command=seleccionar_archivo)
-boton_seleccionar.pack()
-
-# Mostrar la ventana principal
-ventana.mainloop()
+from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QPushButton, QTextEdit, QVBoxLayout, QMessageBox
 
 
+class MainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        
+        self.initUI()
+        
+    def initUI(self):
+        self.setGeometry(100, 100, 400, 300)
+        self.setWindowTitle('Analizador Lexico')
+        
+        # Crear un botón para seleccionar un archivo de texto
+        select_file_button = QPushButton('Seleccionar archivo', self)
+        select_file_button.clicked.connect(self.select_file)
+        
+        # Crear un botón para compilar el archivo de texto
+        compile_button = QPushButton('Compilar', self)
+        compile_button.clicked.connect(self.compile_file)
+        
+        # Crear una caja de texto para mostrar el contenido del archivo
+        self.file_contents = QTextEdit(self)
+        self.file_contents.setReadOnly(True)
+        
+        # Crear un layout vertical para los elementos de la interfaz
+        layout = QVBoxLayout()
+        layout.addWidget(select_file_button)
+        layout.addWidget(self.file_contents)
+        layout.addWidget(compile_button)
+        
+        self.setLayout(layout)
+        
+    def select_file(self):
+        # Abrir un diálogo para seleccionar un archivo de texto
+        file_dialog = QFileDialog(self)
+        file_dialog.setNameFilter('Archivos de texto (*.txt)')
+        
+        if file_dialog.exec_() == QFileDialog.Accepted:
+            file_path = file_dialog.selectedFiles()[0]
+            
+            # Leer el contenido del archivo seleccionado y mostrarlo en la caja de texto
+            with open(file_path, 'r') as f:
+                file_contents = f.read()
+                self.file_contents.setText(file_contents)
+        
+    def compile_file(self):
+        # Obtener el contenido del archivo de la caja de texto y compilarlo aquí
+        file_contents = self.file_contents.toPlainText()
+        
+        # Código para compilar el archivo
+        reservadas = {
+            'entero':'ENTERO',
+            'decimal':'DECIMAL',
+            'booleano':'BOOLEANO',
+            'cadena':'CADENA',
+            'si':'SI',
+            'sino':'SINO',
+            'mientras':'MIENTRAS',
+            'hacer':'HACER',
+            'verdadero':'VERDADERO',
+            'falso':'FALSO'
+        }
 
-# Definir las reglas de análisis léxico
-tokens = ('NUMERO', 'MAS')
+        tokens = ['ID', 'NUMERO', 'ENTERO', 'DECIMAL', 'BOOLEANO', 'CADENA', 'SI', 'SINO', 'MIENTRAS', 'HACER', 'VERDADERO', 'FALSO', 'MAS', 'MENOS', 'POR', 'DIVIDIDO',
+                'PORCIENTO', 'IGUAL', 'COMPARACION', 'MENORQUE', 'MAYORQUE', 'MAYORIGUALQUE', 'MENORIGUALQUE', 'PARIZQ', 'PARDER','CORIZQ', 'CORDER',
+                'COMILLA', 'PUNTOYCOMA', 'ACTUALIZAR']
+        
+        tokens = tokens + list(reservadas.values())
+        
+        t_ignore = '\t'
+        t_MAS = r'\+'
+        t_MENOS = r'\-'
+        t_POR = r'\*'
+        t_DIVIDIDO = r'/'
+        t_PORCIENTO = r'\%'
+        t_IGUAL = r'='
+        t_COMPARACION = r'=='
+        t_MENORQUE = '<'
+        t_MAYORQUE = '>'
+        t_MAYORIGUALQUE = '>='
+        t_MENORIGUALQUE = '<='
+        t_PARIZQ = r'\('
+        t_PARDER = r'\)'
+        t_CORIZQ = r'\{'
+        t_CORDER = r'\}'
+        t_COMILLA = r'"'
+        t_PUNTOYCOMA = r';'
+        t_ACTUALIZAR = ':='
 
-def t_NUMERO(token):
-    r'\d+'
-    token.value = int(token.value)
-    return token
+        def t_ID(t):
+            r'[a-zA-Z_] [a-zA-Z0-9_]*'
+            if t.value.upper() in reservadas:
+                t.value = t.value.upper()
+                reservadas.get(t.value, 'ID')
+                t.type = t.value
+            
+            return  t
+        
+        def t_lineanueva(t):
+            r'\n+'
+            t.lexer.lineno += len(t.value)
 
-def t_MAS(token):
-    r'\+'
-    return token
+        def t_NUMERO(t):
+            r'\d+'
+            t.value = int(t.value)
+            t.type = 'NUMERO'
+            return t
+        
+        def t_error(t):
+            message = "Error: Caracter inesperado '%s'" % t.value[0]
+            return message
 
-t_ignore = ' \t\n'
 
-# Definir las reglas de análisis sintáctico
-def p_suma(p):
-    'expresion : NUMERO MAS NUMERO'
-    p[0] = p[1] + p[3]
+        cadena = file_contents
 
-# Crear el analizador léxico y sintáctico
-analizador_lexico = lex.lex()
-analizador_sintactico = yacc.yacc()
+        analizador = lex.lex()
 
-# Leer la expresión a compilar
-expresion = input("Ingrese una expresión matemática simple: ")
+        analizador.input(cadena)
 
-# Analizar la expresión
-resultado = analizador_sintactico.parse(expresion, lexer=analizador_lexico)
+        while True:
+            tok = analizador.token()
+            if not tok : break
+            print(tok)
 
-# Mostrar el resultado
-print("El resultado de la expresión es:", resultado)
-
-# Palabras reservadas
-P_reservada = {
-    'entero' : 'ENTERO',
-    'decimal' : 'DECIMAL',
-    'booleano' : 'BOOLEANO',
-    'cadena' : 'CADENA',
-    'si' : 'SI',
-    'sino' : 'SINO',
-    'mientras' : 'MIENTRAS',
-    'hacer' : 'HACER',
-    'verdadero' : 'VERDADERO',
-    'falso' : 'FALSO'
-}
-
-operador = {
-    'MAS',
-    'MENOS',
-    'POR',
-    'DIVIDIDO',
-    'PORCIENTO',
-    'IGUAL',
-    'COMPARACION',
-    'MENORQUE',
-    'MAYORQUE',
-    'MENORIGUALQUE',
-    'MAYORIGUALQUE',
-}
-
-signos = {
-    'PARIZQ',
-    'PARDER',
-    'CORIZQ',
-    'CORDER',
-    'COMILLA'
-    'PUNTOCOMA',
-}
-
-numeros = {
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9
-}
-
-identificadores = {
-    numeros, 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 
-    'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
-}
-
-# Tokens
-t_PARIZQ = r'\('
-t_PARDER = r'\)'
-t_CORIZQ = r'\['
-t_CORDER = r'\]'
-t_COMILLA = r'\"'
-t_PUNTOCOMA = r'\;'
-t_MAS = r'\+'
-t_MENOS = r'\-'
-t_POR = r'\*'
-t_DIVIDIDO = r'/'
-t_PORCIENTO = r'\%'
-t_IGUAL = r'\='
+        
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
