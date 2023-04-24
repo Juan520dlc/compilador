@@ -1,6 +1,7 @@
 import sys
 import ply.lex as lex
 
+from distutils.core import setup,Extension
 from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QPushButton, QTextEdit, QVBoxLayout, QMessageBox
 
 
@@ -48,84 +49,13 @@ class MainWindow(QWidget):
                 self.file_contents.setText(file_contents)
         
     def compile_file(self):
-        # Obtener el contenido del archivo de la caja de texto y compilarlo aquí
-        file_contents = self.file_contents.toPlainText()
-        
-        # Código para compilar el archivo
-        reservadas = {
-            'entero':'ENTERO',
-            'decimal':'DECIMAL',
-            'booleano':'BOOLEANO',
-            'cadena':'CADENA',
-            'si':'SI',
-            'sino':'SINO',
-            'mientras':'MIENTRAS',
-            'hacer':'HACER',
-            'verdadero':'VERDADERO',
-            'falso':'FALSO'
-        }
+        modulo = Extension('Compilacion', sources = ['main.cpp'])
 
-        tokens = ['ID', 'NUMERO', 'ENTERO', 'DECIMAL', 'BOOLEANO', 'CADENA', 'SI', 'SINO', 'MIENTRAS', 'HACER', 'VERDADERO', 'FALSO', 'MAS', 'MENOS', 'POR', 'DIVIDIDO',
-                'PORCIENTO', 'IGUAL', 'COMPARACION', 'MENORQUE', 'MAYORQUE', 'MAYORIGUALQUE', 'MENORIGUALQUE', 'PARIZQ', 'PARDER','CORIZQ', 'CORDER',
-                'COMILLA', 'PUNTOYCOMA', 'ACTUALIZAR']
-        
-        tokens = tokens + list(reservadas.values())
-        
-        t_ignore = '\t'
-        t_MAS = r'\+'
-        t_MENOS = r'\-'
-        t_POR = r'\*'
-        t_DIVIDIDO = r'/'
-        t_PORCIENTO = r'\%'
-        t_IGUAL = r'='
-        t_COMPARACION = r'=='
-        t_MENORQUE = '<'
-        t_MAYORQUE = '>'
-        t_MAYORIGUALQUE = '>='
-        t_MENORIGUALQUE = '<='
-        t_PARIZQ = r'\('
-        t_PARDER = r'\)'
-        t_CORIZQ = r'\{'
-        t_CORDER = r'\}'
-        t_COMILLA = r'"'
-        t_PUNTOYCOMA = r';'
-        t_ACTUALIZAR = ':='
-
-        def t_ID(t):
-            r'[a-zA-Z_] [a-zA-Z0-9_]*'
-            if t.value.upper() in reservadas:
-                t.value = t.value.upper()
-                reservadas.get(t.value, 'ID')
-                t.type = t.value
-            
-            return  t
-        
-        def t_lineanueva(t):
-            r'\n+'
-            t.lexer.lineno += len(t.value)
-
-        def t_NUMERO(t):
-            r'\d+'
-            t.value = int(t.value)
-            t.type = 'NUMERO'
-            return t
-        
-        def t_error(t):
-            message = "Error: Caracter inesperado '%s'" % t.value[0]
-            return message
-
-
-        cadena = file_contents
-
-        analizador = lex.lex()
-
-        analizador.input(cadena)
-
-        while True:
-            tok = analizador.token()
-            if not tok : break
-            print(tok)
-
+        setup(name = 'Compilacion',
+                version = '1.0',
+                author = 'Juan Marroquin',
+                description = 'Analizador Lexico y Sintactico',
+                ext_modules = [modulo])
         
 if __name__ == '__main__':
     app = QApplication(sys.argv)
